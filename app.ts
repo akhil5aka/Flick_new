@@ -15,6 +15,8 @@ import { supplier_uuid } from "./config/config";
 
 
 import {startInvoiceScheduler} from "./util/invoice-scheduler"
+import {startFileMovingScheduler} from "./util/file-moving-scheduler"
+
 import { json } from "stream/consumers";
 
 import { Endpoints } from "./src/core/api/Endpoint_hits";
@@ -116,6 +118,7 @@ const moveFileBase = (oldPath: string, newPath: string) => {
 
 
 startInvoiceScheduler();
+startFileMovingScheduler();
 
 // Create an instance of the test class and call its method
 // const testfile = new test();
