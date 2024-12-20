@@ -115,80 +115,91 @@ export class Endpoints {
 
   async GetStatus(documents: { uuid: string }, supplierUUID: string) {
     try {
-        const uuid = documents.uuid;
-        let errorReason = "";
+      const uuid = documents.uuid;
+      let errorReason = "";
 
-        // Fetch document status from API
-        const response = await this.api.get(
-            `/api/einvoice/get-document/${uuid}`,
-            {
-                headers: {
-                    supplier_uuid: supplierUUID,
-                },
-            }
-        );
-
-        console.log("Response of GetStatus:", response.data);
-        const status = response.data.status;
-
-        // Handle invalid status
-        if (status === "Invalid") {
-            const validationSteps = response.data.validationResults?.validationSteps || [];
-            validationSteps.forEach((step: any) => {
-                if (step.status === "Invalid" && step.error?.error) {
-                    errorReason = step.error.error;
-                    console.log("Reason for invalid:", errorReason);
-                }
-            });
-        } else if (status === "Cancelled") {
-            errorReason = response.data.documentStatusReason;
+      // Fetch document status from API
+      const response = await this.api.get(
+        `/api/einvoice/get-document/${uuid}`,
+        {
+          headers: {
+            supplier_uuid: supplierUUID,
+          },
         }
+      );
 
-        const longId = response.data.longId;
+      console.log("Response of GetStatus:", response.data);
+      const status = response.data.status;
 
-        // Update database
-        try {
-            const updatedRecord = await prisma.tb_invoice.update({
-                where: { uuid },
-                data: {
-                    status,
-                    longid: longId,
-                    doc_reasson: errorReason,
-                },
-            });
+      // Handle invalid status
+      if (status === "Invalid") {
+        const validationSteps =
+          response.data.validationResults?.validationSteps || [];
+        validationSteps.forEach((step: any) => {
+          if (step.status === "Invalid" && step.error?.error) {
+            errorReason = step.error.error;
+            console.log("Reason for invalid:", errorReason);
+          }
+        });
+      } else if (status === "Cancelled") {
+        errorReason = response.data.documentStatusReason;
+      }
 
-            // console.log("Updated record in database:", updatedRecord);
-            // process.exit(0)
+      const longId = response.data.longId;
 
-            // Write output files based on the status
-            if (status.toLowerCase() === 'valid') {
-                const qrString = `${process.env.QR_URL ?? 'https://api.myinvois.hasil.gov.my/'}${uuid}/share/${longId}`;
-                await writeSuccessMessage(
-                    updatedRecord.invoice_number!,
-                    qrString,
-                    uuid,
-                    status.toLowerCase()
-                );
-                console.log(`Success file created for invoice ${updatedRecord.invoice_number}`);
-            } else if (status.toLowerCase() === 'invalid') {
-                const validationErrors = response.data.validationResults?.validationSteps
-                    ?.map((v: any) => v?.error?.error ?? '')
-                    .join(', ');
-                writeValidationErrorMessage(updatedRecord.invoice_number!, validationErrors);
-                console.log(`Validation error file created for invoice ${updatedRecord.invoice_number}`);
-            }
-        } catch (dbError) {
-            console.error("Error updating record in database:", dbError);
-        } finally {
-            await prisma.$disconnect();
+      // Update database
+      try {
+        const updatedRecord = await prisma.tb_invoice.update({
+          where: { uuid },
+          data: {
+            status,
+            longid: longId,
+            doc_reasson: errorReason,
+          },
+        });
+
+        // console.log("Updated record in database:", updatedRecord);
+        // process.exit(0)
+
+        // Write output files based on the status
+        if (status.toLowerCase() === "valid") {
+          const qrString = `${
+            process.env.QR_URL ?? "https://api.myinvois.hasil.gov.my/"
+          }${uuid}/share/${longId}`;
+          await writeSuccessMessage(
+            updatedRecord.invoice_number!,
+            qrString,
+            uuid,
+            status.toLowerCase()
+          );
+          console.log(
+            `Success file created for invoice ${updatedRecord.invoice_number}`
+          );
+        } else if (status.toLowerCase() === "invalid") {
+          const validationErrors =
+            response.data.validationResults?.validationSteps
+              ?.map((v: any) => v?.error?.error ?? "")
+              .join(", ");
+          writeValidationErrorMessage(
+            updatedRecord.invoice_number!,
+            validationErrors
+          );
+          console.log(
+            `Validation error file created for invoice ${updatedRecord.invoice_number}`
+          );
         }
+      } catch (dbError) {
+        console.error("Error updating record in database:", dbError);
+      } finally {
+        await prisma.$disconnect();
+      }
     } catch (apiError: any) {
-        console.error(
-            "Error in GetStatus:",
-            apiError.response?.data || apiError.message
-        );
+      console.error(
+        "Error in GetStatus:",
+        apiError.response?.data || apiError.message
+      );
     }
-}
+  }
 
   //cancel invoice  logic start here
 

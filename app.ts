@@ -1,5 +1,4 @@
-
-
+// Implimented by Akhil
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -10,12 +9,10 @@ import * as fileFn from "fs";
 import path from "path";
 import { supplier_uuid } from "./config/config";
 
-
 // dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-
-import {startInvoiceScheduler} from "./util/invoice-scheduler"
-import {startFileMovingScheduler} from "./util/file-moving-scheduler"
+import { startInvoiceScheduler } from "./util/invoice-scheduler";
+import { startFileMovingScheduler } from "./util/file-moving-scheduler";
 
 import { json } from "stream/consumers";
 
@@ -23,10 +20,8 @@ import { Endpoints } from "./src/core/api/Endpoint_hits";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-
-var fsfolder = process.env.IN_FOLDER!
-console.log(fsfolder,"fsfolder")
-
+var fsfolder = process.env.IN_FOLDER!;
+console.log(fsfolder, "fsfolder");
 
 const filequeue = new PubSub();
 
@@ -66,24 +61,17 @@ watcher.on("add", async (filepath: string | Error) => {
       moveFileToArchive(filepath);
     } else if (data.mode == "cancel") {
       console.log("in cancel mode ");
-     await points.Cancel_invoice(data.uuid,data.reason,supplierUUid)
+      await points.Cancel_invoice(data.uuid, data.reason, supplierUUid);
       moveFileToArchive(filepath);
-
-
     } else if (data.mode == "getstatus") {
-      await points.GetStatus(data,supplierUUid);
+      await points.GetStatus(data, supplierUUid);
       moveFileToArchive(filepath);
 
       console.log("in get status mode");
-    }
-
-    else if(data.mode=="self")
-      {
-        points.SelfBilled(data,supplierUUid)
+    } else if (data.mode == "self") {
+      points.SelfBilled(data, supplierUUid);
       moveFileToArchive(filepath);
-
-
-      }
+    }
   });
   // moveFileToArchive(filepath)
 });
@@ -92,7 +80,6 @@ watcher.on("add", async (filepath: string | Error) => {
 watcher.on("error", (error) => {
   console.error("Watcher error:", error);
 });
-
 
 var ar_fsfolder = process.env.ARCHIVE_FOLDER!;
 
@@ -115,7 +102,6 @@ const moveFileBase = (oldPath: string, newPath: string) => {
     console.error(`Error moving file from ${oldPath} to ${newPath}:`, error);
   }
 };
-
 
 startInvoiceScheduler();
 startFileMovingScheduler();
